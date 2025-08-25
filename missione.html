@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TOP SECRET — Operazione Dominio Domestico</title>
+  <meta name="theme-color" content="#0b0f14" />
+  <style>
+    :root{
+      --bg:#0b0f14; --fg:#e6f1ff; --accent:#20ff8a; --muted:#7aa2c1; --warn:#ffdd57; --danger:#ff5c7c;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{position:relative;width:min(860px,95vw);padding:24px;border-radius:18px;
+      background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden}
+    .scanlines::after{content:"";position:absolute;inset:0;pointer-events:none;
+      background:repeating-linear-gradient(to bottom, rgba(255,255,255,.05) 0 1px, transparent 1px 4px);
+      mix-blend-mode:overlay;animation:scan 8s linear infinite}
+    @keyframes scan{0%{transform:translateY(-8%)}100%{transform:translateY(8%)}}
+    .bar{position:absolute;left:-40%;right:100%;top:0;height:2px;
+      background:linear-gradient(90deg,transparent,var(--accent),transparent);
+      animation:sweep 2.6s ease-in-out infinite}
+    @keyframes sweep{50%{left:0;right:0}100%{left:100%;right:-40%}}
+    .header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+    .badge{font-weight:700;letter-spacing:2px;color:#06251a;background:var(--accent);
+      padding:6px 10px;border-radius:999px;box-shadow:0 0 14px var(--accent)}
+    .title{font-size:clamp(18px,2.4vw,22px);opacity:.9}
+    .sub{color:var(--muted);font-size:14px;margin-bottom:10px}
+    .crt{border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:14px;background:rgba(10,15,20,.7);min-height:220px}
+    .line{white-space:pre-wrap;line-height:1.55}
+    .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);margin:10px 0}
+    .muted{color:var(--muted)} .accent{color:var(--accent)} .dim{opacity:.8}
+    .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+    button{appearance:none;border:none;cursor:pointer;border-radius:12px;padding:10px 14px;font-weight:700;letter-spacing:.3px}
+    .primary{background:var(--accent);color:#06251a;box-shadow:0 10px 24px rgba(32,255,138,.28)}
+    .ghost{background:transparent;color:var(--fg);border:1px solid rgba(255,255,255,.18)}
+    .footer{margin-top:12px;color:var(--muted);font-size:12px}
+    dialog{background:#0b0f14;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:16px;color:#e6f1ff}
+    dialog img{width:220px;height:220px;display:block;margin:auto;border-radius:8px;border:1px solid rgba(255,255,255,.2)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card scanlines" role="application" aria-label="Terminale missione segreta">
+      <div class="bar" aria-hidden="true"></div>
+      <div class="header">
+        <span class="badge">TOP SECRET</span>
+        <div class="title">MISSIONE: Operazione Domini🜲 Domestico</div>
+      </div>
+      <div class="sub" id="subtitle">Quartier Generale: Casa • Stato: INIZIALIZZAZIONE</div>
+
+      <div class="crt" id="crt">
+        <div class="line muted" id="boot">&gt; Avvio protocolli…</div>
+        <div class="line" id="decode"></div>
+        <div class="divider"></div>
+        <div class="line dim" id="mission"></div>
+        <div class="divider"></div>
+        <div class="line" id="rules"></div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" id="startBtn">AVVIA / DECRIPTA</button>
+        <button class="ghost" id="shareBtn">Copia link personalizzato</button>
+        <button class="ghost" id="qrBtn">Mostra QR</button>
+        <button class="ghost" id="pingBtn">Ping dispositivo</button>
+      </div>
+      <div class="footer">Suggerimento: personalizza via URL es. <code>?agent=Immacolata%20Pizzella&codename=Pizzella&msg=Non%20fare%20domande</code></div>
+    </div>
+  </div>
+
+  <dialog id="qrDialog">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+      <strong>QR del tuo link</strong>
+      <button id="closeQr" class="ghost" style="padding:6px 10px;border-radius:10px">Chiudi</button>
+    </div>
+    <img id="qrImg" alt="QR del link" />
+    <div style="text-align:center;margin-top:8px;font-size:12px;color:#7aa2c1" id="qrUrl"></div>
+  </dialog>
+
+<script>
+(function(){
+  // --------- Utils
+  const $ = s => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  const agent = decodeURIComponent(params.get("agent")||"Immacolata");
+  const codename = decodeURIComponent(params.get("codename")||"Pizzetta");
+  const msg = decodeURIComponent(params.get("msg")||"Se stai leggendo questo messaggio, la situazione è critica.");
+  const subtitle = $("#subtitle");
+  const decodeEl = $("#decode");
+  const missionEl = $("#mission");
+  const rulesEl = $("#rules");
+  const bootEl = $("#boot");
+
+  // --------- Texts
+  const intro = `>>> Identità confermata: ${agent.toUpperCase()} (${codename.toUpperCase()})
+>>> Canale cifrato stabilito
+>>> Livello di accesso: ALPHA`;
+  const mission = `AGENTE ${agent}, ${msg}
+Un soggetto armato (codename: "DANILO") si è barricato nei locali.
+La tua arma è pronta. Le regole sono semplici:`;
+  const rules = `1) Prendi la pistola.
+2) Entra con cautela.
+3) Eliminami con stile.
+⚠️ Il nemico è nascosto. Che vinca il/la più veloce.`;
+
+  // --------- Decoder effect
+  function decoder(targetEl, full, speed=18){
+    return new Promise(resolve=>{
+      const glyphs = "!@#$%&*+<>{}[]/\\|◼︎◻︎◊◇◆";
+      let out = Array(full.length).fill(" ");
+      let i = 0;
+      const timer = setInterval(()=>{
+        for(let j=i;j<Math.min(i+3, full.length); j++){
+          out[j] = full[j];
+        }
+        // spice random noise ahead
+        for(let k=i+3;k<Math.min(i+14, full.length);k++){
+          if(full[k] !== " ") out[k] = glyphs[Math.floor(Math.random()*glyphs.length)];
+        }
+        targetEl.textContent = out.join("");
+        i++;
+        if(i>=full.length){
+          targetEl.textContent = full;
+          clearInterval(timer); resolve();
+        }
+      }, speed);
+    });
+  }
+
+  // --------- Buttons
+  $("#startBtn").addEventListener("click", async ()=>{
+    navigator.vibrate?.(20);
+    subtitle.textContent = "Quartier Generale: Casa • Stato: DECRIPTAZIONE";
+    bootEl.textContent = "> Avvio protocolli… OK";
+    await decoder(decodeEl, intro, 12);
+    await decoder(missionEl, mission, 10);
+    await decoder(rulesEl, rules, 10);
+    subtitle.textContent = "Quartier Generale: Casa • Stato: PRONTA ALL'AZIONE";
+  });
+
+  $("#shareBtn").addEventListener("click", async ()=>{
+    const a = prompt("Immacolata", agent) || agent;
+    const c = prompt("Pizzetta", codename) || codename;
+    const m = prompt("Messaggio (breve)?", msg) || msg;
+    const url = `${location.origin}${location.pathname}?agent=${encodeURIComponent(a)}&codename=${encodeURIComponent(c)}&msg=${encodeURIComponent(m)}`;
+    try{
+      await navigator.clipboard.writeText(url);
+      alert("Link copiato! Incollalo in chat 👍\n\n" + url);
+    }catch{
+      prompt("Copia il link:", url);
+    }
+  });
+
+  $("#qrBtn").addEventListener("click", ()=>{
+    const url = location.href;
+    const api = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(url);
+    $("#qrImg").src = api;
+    $("#qrUrl").textContent = url;
+    $("#qrDialog").showModal();
+  });
+  $("#closeQr").addEventListener("click", ()=>$("#qrDialog").close());
+
+  $("#pingBtn").addEventListener("click", async ()=>{
+    subtitle.textContent = "Quartier Generale: Casa • Stato: PING…";
+    navigator.vibrate?.([12,40,12]);
+    await new Promise(r=>setTimeout(r, 400));
+    subtitle.textContent = "Quartier Generale: Casa • Stato: ONLINE";
+  });
+
+  // Auto-start hint on mobile
+  if(/Mobi|Android/i.test(navigator.userAgent)){
+    setTimeout(()=>$("#startBtn").focus(), 200);
+  }
+})();
+</script>
+</body>
+</html>
